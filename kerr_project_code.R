@@ -67,32 +67,31 @@ ui <- fluidPage(
                     "WASHINGTON", "WEST NORTH CENTRAL", "WEST SOUTH CENTRAL", 
                     "WEST VIRGINIA", "WISCONSIN", "WYOMING"), 
                 selected = "TOTAL"),
-    
+    #Select disease
     selectInput("selectdis", label = h3("Disease"), 
                 choices = list(
                   "Gonorrhea" = "Gonorrhea", 
                   "H. Influenza" = 'Haemophilus.influenza'), 
                 selected = "Gonorrhea"),
-    
+    # Select time period
     selectInput("selecttime", label = h3("Time period"), 
                 choices = list(
                   "Current Week" = "Current.week", 
-               #   "Previous 52 Weeks" = 'Previous',
                   "Cumulative from 2021" = "Cum.2021",
                   "Cumulative from 2020" = "Cum.2020"), 
                 selected = "Current.week", multiple = TRUE),
-    
+    # Select type of disease (e.g., invasive)
     selectInput("selecttype", label = h3("Type of Disease"), 
                 choices = c("", 
                             "Invasive disease" = "invasive.disease"), 
                 selected = NULL),
-    
+    # Select age group
     selectInput("selectage", label = h3("Age"), 
                 choices = c("",
                             "All ages" = "All.ages",
                             "5 and under" = "5.years"), 
                 selected = NULL),
-    
+    # Select serotype
     selectInput("selectsero", label = h3("Serotype"), 
                 choices = c("",
                             "All serotypes" = "all.serotypes",
@@ -100,9 +99,8 @@ ui <- fluidPage(
                 selected = NULL)
   
     
-    #selectInput("disease", "Disease", choices = NULL),
-    
      ),
+  # what is displayed on the main page
   mainPanel(
     tableOutput("contents"),
     plotOutput("plot")
@@ -135,13 +133,14 @@ server <- function(input, output){
         if (nchar(input$selectsero) > 0) {
           df <- select(df, Reporting.Area, MMWR.Week, contains(input$selectsero))
         }
-        df <- select(df, -contains("flag"))        
+        ## not interested in the flagged columns, going to remove
+        df <- select(df, -contains("flag"))   
         
+        ## if two time periods are chosen, do the following
         if (length(input$selecttime)==2){
           df <- rename(df, location = Reporting.Area,week = MMWR.Week)
-          #             cases1 = contains(input$selecttime[1]),
-          #             cases2 = contains(input$selecttime[2]))
-          
+
+          ## use the column names of the selected times
           colnames(df)[grep(input$selecttime[1], colnames(df))] <- input$selecttime[1]
           colnames(df)[grep(input$selecttime[2], colnames(df))] <- input$selecttime[2]
           
@@ -149,15 +148,9 @@ server <- function(input, output){
           df[, input$selecttime[1]] <- as.numeric(gsub(",", "", df[, input$selecttime[1]]))
           df[, input$selecttime[2]] <- as.numeric(gsub(",", "", df[, input$selecttime[2]]))
           
-                                                  #df[, which(colnames(df) %in% c(input$selecttime[1], input$selecttime[2]))] <- 
-          #  as.numeric(gsub(",", "", df[, which(colnames(df) %in% c(input$selecttime[1], input$selecttime[2]))]))
-          
-         # df <- dplyr::mutate(df, 
-        #                      cases1 = as.numeric(gsub(",", "", cases1)),
-        #                      cases2 = as.numeric(gsub(",", "", cases2)))
           
           df <- arrange(df, week)
-          
+          ## comparison line plot of disease vs time
           output$plot <- renderPlot({
             ggplot(df, aes(x=week)) + 
               geom_line(aes(y = df[, input$selecttime[1]], color = input$selecttime[1])) + 
@@ -166,12 +159,12 @@ server <- function(input, output){
 
           }, height = 400,width = 600)
           
-          
+          ## if 3 time periods are selected, do the following:
+            ## honestly shouldn't do this. in the readme.
         } else if (length(input$selecttime) == 3){ 
           df <- rename(df, location = Reporting.Area,week = MMWR.Week)
-          #             cases1 = contains(input$selecttime[1]),
-          #             cases2 = contains(input$selecttime[2]))
           
+          ## use the column names of the selected times
           colnames(df)[grep(input$selecttime[1], colnames(df))] <- input$selecttime[1]
           colnames(df)[grep(input$selecttime[2], colnames(df))] <- input$selecttime[2]
           colnames(df)[grep(input$selecttime[3], colnames(df))] <- input$selecttime[3]
@@ -179,15 +172,9 @@ server <- function(input, output){
           df[, input$selecttime[1]] <- as.numeric(gsub(",", "", df[, input$selecttime[1]]))
           df[, input$selecttime[2]] <- as.numeric(gsub(",", "", df[, input$selecttime[2]]))
           df[, input$selecttime[3]] <- as.numeric(gsub(",", "", df[, input$selecttime[3]]))
-          #df[, which(colnames(df) %in% c(input$selecttime[1], input$selecttime[2]))] <- 
-          #  as.numeric(gsub(",", "", df[, which(colnames(df) %in% c(input$selecttime[1], input$selecttime[2]))]))
-          
-          # df <- dplyr::mutate(df, 
-          #                      cases1 = as.numeric(gsub(",", "", cases1)),
-          #                      cases2 = as.numeric(gsub(",", "", cases2)))
-          
+
           df <- arrange(df, week)
-          
+          ## comparison line plot of disease vs time
           output$plot <- renderPlot({
             ggplot(df, aes(x=week)) + 
               geom_line(aes(y = df[, input$selecttime[1]], color = input$selecttime[1])) + 
@@ -197,16 +184,17 @@ server <- function(input, output){
           }, height = 400,width = 600)
           
           } else {
-        
-          df <- rename(df, location = Reporting.Area,
-                       week = MMWR.Week,
-                       cases = contains(input$selectdis))
-          df <- dplyr::mutate(df, cases = as.numeric(gsub(",", "", cases)))
-          df <- arrange(df, week)
+        ## if only one time period is selected, make a normal plot
+            df <- rename(df, location = Reporting.Area,week = MMWR.Week)
+            
+            ## use the column names of the selected times
+            colnames(df)[grep(input$selecttime[1], colnames(df))] <- input$selecttime[1]
+            df[, input$selecttime[1]] <- as.numeric(gsub(",", "", df[, input$selecttime[1]]))
+            df <- arrange(df, week)
           
           output$plot <- renderPlot({
             ggplot() +
-              geom_line(data = df, aes(x=week, y=cases, group=location, color = cases))+
+              geom_line(data = df, aes(x=week, y=df[, input$selecttime[1]], group=location, color = input$selecttime[1]))+
               geom_point() +
               ylab("Raw Case Counts") 
               
@@ -222,15 +210,6 @@ server <- function(input, output){
       }
     )
     
-   # df_disease <- reactive({
-  #    dis_name <- names(df)[grep("\\.\\.", names(df))]
-  #  })
-  #  observeEvent(df_disease(), {
-  #    choices <- unique(df_disease())
-  #    updateSelectInput(inputId = "disease", choices = choices) 
-  #  })
-    
-    
     if(input$disp == "head") {
       return(head(df))
     }
@@ -240,13 +219,6 @@ server <- function(input, output){
     
   })
   
-# output$plot <- renderPlot({
-#   ggplot() +
-#     geom_line(data = df, aes(x=week, y=cases, group=location), linetype = "dashed")+
-#     geom_point()
-# }, height = 400,width = 600)
-  
-  #output$value <- renderPrint({ input$selectra })
   
 }
 

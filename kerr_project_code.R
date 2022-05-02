@@ -8,7 +8,7 @@ library(usmap)
 ui <- fluidPage(
   
   #Main title page header
-  titlePanel("NNDSS Summary Statistics Visualization"),
+  titlePanel("NNDSS Data Visualization"),
   
   # Sidebar layout with input and output definitions
   sidebarLayout(
